@@ -19,8 +19,8 @@ source "tart-cli" "tart" {
   vm_base_name = "ghcr.io/cirruslabs/macos-${var.macos_version}-vanilla:latest"
   vm_name      = "${var.macos_version}-base"
   cpu_count    = 4
-  memory_gb    = 8
-  disk_size_gb = 50
+  memory_gb    = 4
+  disk_size_gb = 100
   ssh_password = "admin"
   ssh_username = "admin"
   ssh_timeout  = "120s"
@@ -87,6 +87,8 @@ build {
       "rbenv install $(rbenv install -l | grep -v - | tail -1)",
       "rbenv global $(rbenv install -l | grep -v - | tail -1)",
       "gem install bundler",
+      // Enable passwordless sudo
+      "echo admin | sudo -S sh -c \"mkdir -p /etc/sudoers.d/; echo 'admin ALL=(ALL) NOPASSWD: ALL' | EDITOR=tee visudo /etc/sudoers.d/admin-nopasswd\"",
     ]
   }
   provisioner "shell" {

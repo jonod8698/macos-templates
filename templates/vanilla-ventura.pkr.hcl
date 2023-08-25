@@ -11,12 +11,12 @@ source "tart-cli" "tart" {
   # You can find macOS IPSW URLs on various websites like https://ipsw.me/
   # and https://www.theiphonewiki.com/wiki/Beta_Firmware/Mac/13.x
   from_ipsw    = "https://updates.cdn-apple.com/2023SpringFCS/fullrestores/042-01877/2F49A9FE-7033-41D0-9D0C-64EFCE6B4C22/UniversalMac_13.4.1_22F82_Restore.ipsw"
-  vm_name      = "ventura-vanilla"
+  vm_name      = "ventura-ci-vanilla-base"
   cpu_count    = 4
-  memory_gb    = 8
-  disk_size_gb = 40
-  ssh_password = "admin"
-  ssh_username = "admin"
+  memory_gb    = 4
+  disk_size_gb = 100
+  ssh_password = "runner"
+  ssh_username = "runner"
   ssh_timeout  = "120s"
   boot_command = [
     # hello, hola, bonjour, etc.
@@ -42,7 +42,7 @@ source "tart-cli" "tart" {
     # I have read and agree to the macOS Software License Agreement
     "<wait10s><tab><spacebar>",
     # Create a Computer Account
-    "<wait10s>admin<tab><tab>admin<tab>admin<tab><tab><tab><spacebar>",
+    "<wait10s>runner<tab><tab>runner<tab>runner<tab><tab><tab><spacebar>",
     # Enable Location Services
     "<wait10s><leftShiftOn><tab><leftShiftOff><spacebar>",
     # Are you sure you don't want to use Location Services?
@@ -88,33 +88,97 @@ build {
   provisioner "shell" {
     inline = [
       // Enable passwordless sudo
-      "echo admin | sudo -S sh -c \"mkdir -p /etc/sudoers.d/; echo 'admin ALL=(ALL) NOPASSWD: ALL' | EDITOR=tee visudo /etc/sudoers.d/admin-nopasswd\"",
+      "echo runner | sudo -S sh -c \"mkdir -p /etc/sudoers.d/; echo 'runner ALL=(ALL) NOPASSWD: ALL' | EDITOR=tee visudo /etc/sudoers.d/admin-nopasswd\"",
       // Enable auto-login
       //
       // See https://github.com/xfreebird/kcpassword for details.
       "echo '00000000: 1ced 3f4a bcbc ba2c caca 4e82' | sudo xxd -r - /etc/kcpassword",
-      "sudo defaults write /Library/Preferences/com.apple.loginwindow autoLoginUser admin",
+      "sudo defaults write /Library/Preferences/com.apple.loginwindow autoLoginUser runner",
       // Disable screensaver at login screen
       "sudo defaults write /Library/Preferences/com.apple.screensaver loginWindowIdleTime 0",
-      // Disable screensaver for admin user
+      // Disable screensaver for runner user
       "defaults -currentHost write com.apple.screensaver idleTime 0",
       // Prevent the VM from sleeping
       "sudo systemsetup -setdisplaysleep Off",
       "sudo systemsetup -setsleep Off",
       "sudo systemsetup -setcomputersleep Off",
-      // Launch Safari to populate the defaults
-      "/Applications/Safari.app/Contents/MacOS/Safari &",
-      "sleep 30",
-      "kill -9 %1",
-      // Enable Safari's remote automation and "Develop" menu
-      "sudo safaridriver --enable",
-      "defaults write com.apple.Safari.SandboxBroker ShowDevelopMenu -bool true",
-      "defaults write com.apple.Safari IncludeDevelopMenu -bool true",
       // Disable screen lock
       //
       // Note that this only works if the user is logged-in,
       // i.e. not on login screen.
-      "sysadminctl -screenLock off -password admin",
+      "sysadminctl -screenLock off -password runner",
     ]
   }
+
+    provisioner "file" {
+    source      = "data/limit.maxfiles.plist"
+    destination = "~/limit.maxfiles.plist"
+  }
+
+  provisioner "shell" {
+    inline = [
+      "echo 'Configuring maxfiles...'",
+      "sudo mv ~/limit.maxfiles.plist /Library/LaunchDaemons/limit.maxfiles.plist",
+      "sudo chown root:wheel /Library/LaunchDaemons/limit.maxfiles.plist",
+      "sudo chmod 0644 /Library/LaunchDaemons/limit.maxfiles.plist",
+      "echo 'Disabling spotlight...'",
+      "sudo mdutil -a -i off",
+    ]
+  }
+
+  # Create a symlink for bash compatibility
+  provisioner "shell" {
+    inline = [
+      "touch ~/.zprofile",
+      "ln -s ~/.zprofile ~/.profile",
+    ]
+  }
+
+  provisioner "shell" {
+    inline = [
+      "/bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"",
+      "echo \"export LANG=en_US.UTF-8\" >> ~/.zprofile",
+      "echo 'eval \"$(/opt/homebrew/bin/brew shellenv)\"' >> ~/.zprofile",
+      "echo \"export HOMEBREW_NO_AUTO_UPDATE=1\" >> ~/.zprofile",
+      "echo \"export HOMEBREW_NO_INSTALL_CLEANUP=1\" >> ~/.zprofile",
+      "source ~/.zprofile",
+      "brew --version",
+      "brew update",
+      "brew install wget cmake gcc git-lfs jq gh gitlab-runner",
+      "git lfs install",
+    ]
+  }
+
+  provisioner "shell" {
+    inline = [
+      "source ~/.zprofile",
+      "brew install node",
+      "node --version",
+      "npm install --global yarn",
+      "yarn --version",
+    ]
+  }
+  provisioner "shell" {
+    inline = [
+      "sudo safaridriver --enable",
+    ]
+  }
+  provisioner "shell" {
+    inline = [
+      "source ~/.zprofile",
+      "brew install awscli"
+    ]
+  }
+
+  provisioner "shell" {
+    inline = [
+      "source ~/.zprofile",
+      "brew install --cask powershell",
+      "brew install --cask red-canary-mac-monitor",
+      "brew install --cask google-chrome",
+      "brew install go",
+      "brew install jq",
+    ]
+  }
+
 }
