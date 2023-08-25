@@ -69,44 +69,12 @@ build {
       "echo 'eval \"$(/opt/homebrew/bin/brew shellenv)\"' >> ~/.zprofile",
       "echo \"export HOMEBREW_NO_AUTO_UPDATE=1\" >> ~/.zprofile",
       "echo \"export HOMEBREW_NO_INSTALL_CLEANUP=1\" >> ~/.zprofile",
+      "echo \"alias pwsh=\"/usr/local/bin/pwsh\"\" >> ~/.zprofile",
       "source ~/.zprofile",
       "brew --version",
       "brew update",
       "brew install wget cmake gcc git-lfs jq gh gitlab-runner",
       "git lfs install",
-    ]
-  }
-  provisioner "shell" {
-    inline = [
-      "source ~/.zprofile",
-      "brew install libyaml", # https://github.com/rbenv/ruby-build/discussions/2118
-      "brew install rbenv",
-      "echo 'if which rbenv > /dev/null; then eval \"$(rbenv init -)\"; fi' >> ~/.zprofile",
-      "source ~/.zprofile",
-      "rbenv install 2.7.8", // latest 2.x.x before EOL
-      "rbenv install $(rbenv install -l | grep -v - | tail -1)",
-      "rbenv global $(rbenv install -l | grep -v - | tail -1)",
-      "gem install bundler",
-    ]
-  }
-  provisioner "shell" {
-    inline = [
-      "source ~/.zprofile",
-      "brew install node",
-      "node --version",
-      "npm install --global yarn",
-      "yarn --version",
-    ]
-  }
-  provisioner "shell" {
-    inline = [
-      "sudo safaridriver --enable",
-    ]
-  }
-  provisioner "shell" {
-    inline = [
-      "source ~/.zprofile",
-      "brew install awscli"
     ]
   }
 
@@ -116,6 +84,11 @@ build {
       "brew install --cask powershell",
       "brew install --cask red-canary-mac-monitor",
       "brew install --cask google-chrome",
+      "/usr/sbin/softwareupdate --install-rosetta --agree-to-license",
+      "/usr/local/bin/pwsh -c 'IEX (IWR 'https://raw.githubusercontent.com/redcanaryco/invoke-atomicredteam/master/install-atomicredteam.ps1' -UseBasicParsing);Install-AtomicRedTeam -InstallPath \"~/.local/powershell/Modules\"'",
+      "pwsh -c 'New-Item -ItemType File -Path ~/.config/powershell/Microsoft.PowerShell_profile.ps1 -Force'",
+      "pwsh -c 'echo \"Import-Module ~/.local/powershell/Modules/invoke-atomicredteam/\" > ~/.config/powershell/Microsoft.PowerShell_profile.ps1'",
+      "pwsh -c 'Get-Help Invoke-AtomicTest'",
     ]
   }
 }
