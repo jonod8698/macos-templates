@@ -15,12 +15,16 @@ variable "gha_version" {
   type = string
 }
 
+variable "xcode_version" {
+  type = string
+}
+
 source "tart-cli" "tart" {
   vm_base_name = "ghcr.io/cirruslabs/macos-${var.macos_version}-vanilla:latest"
-  vm_name      = "${var.macos_version}-base"
+  vm_name      = "ventura-custom-base"
   cpu_count    = 4
-  memory_gb    = 8
-  disk_size_gb = 50
+  memory_gb    = 4
+  disk_size_gb = 200
   ssh_password = "admin"
   ssh_username = "admin"
   ssh_timeout  = "120s"
@@ -91,4 +95,5 @@ build {
       "pwsh -c 'Get-Help Invoke-AtomicTest'",
     ]
   }
+
 }

@@ -7,20 +7,25 @@ packer {
   }
 }
 
+variable "xcode_version" {
+  type = string
+  default = "14.3.1"
+}
+
 source "tart-cli" "tart" {
   # You can find macOS IPSW URLs on various websites like https://ipsw.me/
   # and https://www.theiphonewiki.com/wiki/Beta_Firmware/Mac/13.x
-  from_ipsw    = "https://updates.cdn-apple.com/2023SpringFCS/fullrestores/042-01877/2F49A9FE-7033-41D0-9D0C-64EFCE6B4C22/UniversalMac_13.4.1_22F82_Restore.ipsw"
-  vm_name      = "ventura-vanilla"
+  from_ipsw    = "https://updates.cdn-apple.com/2023SummerFCS/fullrestores/042-43686/945D434B-DA5D-48DB-A558-F6D18D11AD69/UniversalMac_13.5.2_22G91_Restore.ipsw"
+  vm_name      = "ventura-base"
   cpu_count    = 4
-  memory_gb    = 8
-  disk_size_gb = 40
+  memory_gb    = 4
+  disk_size_gb = 50
   ssh_password = "admin"
   ssh_username = "admin"
   ssh_timeout  = "120s"
   boot_command = [
     # hello, hola, bonjour, etc.
-    "<wait60s><spacebar>",
+    "<wait120s><spacebar>",
     # Language
     "<wait30s>english<enter>",
     # Select Your Country and Region
@@ -50,7 +55,7 @@ source "tart-cli" "tart" {
     # Select Your Time Zone
     "<wait10s><tab>UTC<enter><leftShiftOn><tab><leftShiftOff><spacebar>",
     # Analytics
-    "<wait10s><leftShiftOn><tab><leftShiftOff><spacebar>",
+    "<wait10s><tab><spacebar><leftShiftOn><tab><leftShiftOff><spacebar>",
     # Screen Time
     "<wait10s><tab><spacebar>",
     # Siri
@@ -62,7 +67,7 @@ source "tart-cli" "tart" {
     # Now that the installation is done, open "System Settings"
     "<wait10s><leftAltOn><spacebar><leftAltOff>System Settings<enter>",
     # Navigate to "Sharing"
-    "<wait10s><leftAltOn>f<leftAltOff>sharing<enter>",
+    "<wait10s><leftAltOn>f<leftAltOff>shar<wait5s>ing<enter>",
     # Navigate to "Screen Sharing" and enable it
     "<wait10s><tab><down><spacebar>",
     # Navigate to "Remote Login" and enable it
@@ -106,15 +111,65 @@ build {
       "/Applications/Safari.app/Contents/MacOS/Safari &",
       "sleep 30",
       "kill -9 %1",
-      // Enable Safari's remote automation and "Develop" menu
-      "sudo safaridriver --enable",
-      "defaults write com.apple.Safari.SandboxBroker ShowDevelopMenu -bool true",
-      "defaults write com.apple.Safari IncludeDevelopMenu -bool true",
       // Disable screen lock
       //
       // Note that this only works if the user is logged-in,
       // i.e. not on login screen.
       "sysadminctl -screenLock off -password admin",
+    ]
+  }
+
+  provisioner "file" {
+    source      = "data/limit.maxfiles.plist"
+    destination = "~/limit.maxfiles.plist"
+  }
+
+  provisioner "shell" {
+    inline = [
+      "echo 'Configuring maxfiles...'",
+      "sudo mv ~/limit.maxfiles.plist /Library/LaunchDaemons/limit.maxfiles.plist",
+      "sudo chown root:wheel /Library/LaunchDaemons/limit.maxfiles.plist",
+      "sudo chmod 0644 /Library/LaunchDaemons/limit.maxfiles.plist",
+      "echo 'Disabling spotlight...'",
+      "sudo mdutil -a -i off",
+      "xcode-select --install",
+    ]
+  }
+
+  # Create a symlink for bash compatibility
+  provisioner "shell" {
+    inline = [
+      "touch ~/.zprofile",
+      "ln -s ~/.zprofile ~/.profile",
+    ]
+  }
+
+  provisioner "shell" {
+    inline = [
+      // Enable Rosetta
+      "sudo softwareupdate --install-rosetta --agree-to-license",
+      // Install Homebrew
+      "/bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"",
+      "echo \"export LANG=en_US.UTF-8\" >> ~/.zprofile",
+      "echo 'eval \"$(/opt/homebrew/bin/brew shellenv)\"' >> ~/.zprofile",
+      "echo \"export HOMEBREW_NO_AUTO_UPDATE=1\" >> ~/.zprofile",
+      "echo \"export HOMEBREW_NO_INSTALL_CLEANUP=1\" >> ~/.zprofile",
+      "source ~/.zprofile",
+      "brew --version",
+      "brew update",
+      "brew install wget",
+      // Bypass GUI authorization check for trusted root cert addition
+      "sudo security authorizationdb write com.apple.trust-settings.admin allow",
+    ]
+  }
+
+  provisioner "shell" {
+    inline = [
+      // Install atomic red team requirements
+      "source ~/.zprofile",
+      "brew install --cask powershell",
+      "brew install --cask red-canary-mac-monitor",
+      "brew install --cask google-chrome",
     ]
   }
 }

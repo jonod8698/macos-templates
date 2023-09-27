@@ -9,6 +9,7 @@ packer {
 
 variable "vm_name" {
   type = string
+  default = "ventura-sip-disabled"
 }
 
 source "tart-cli" "tart" {
@@ -25,14 +26,13 @@ source "tart-cli" "tart" {
     # Select default language
     "<wait10s><enter>",
     # Open Terminal
-    "<wait10s><leftCtrlOn><f2><leftCtrlOff>",
+    "<wait5s><leftCtrlOn><f2><leftCtrlOff>",
     "<right><right><right><right><down><down><down><enter>",
     # Disable SIP
-    "<wait10s>csrutil disable<enter>",
-    "<wait10s>y<enter>",
-    "<wait10s>admin<enter>",
+    "<wait5s>csrutil disable<enter>",
+    "<wait5s>admin<enter>",
     # Shutdown
-    "<wait10s>halt<enter>"
+    "<wait5s>halt<enter>"
   ]
 }
 

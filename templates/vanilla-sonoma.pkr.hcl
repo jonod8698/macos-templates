@@ -65,7 +65,9 @@ source "tart-cli" "tart" {
     # Now that the installation is done, open "System Settings"
     "<wait10s><leftAltOn><spacebar><leftAltOff>System Settings<enter>",
     # Navigate to "Sharing"
-    "<wait10s><leftAltOn>f<leftAltOff>sharing<enter>",
+    "<wait10s><leftAltOn>f<leftAltOff>shar",
+    "<wait5s>ring",
+    "<wait5s><enter>",
     # Navigate to "Screen Sharing" and enable it
     "<wait10s><tab><tab><tab><tab><tab><spacebar>",
     # Navigate to "Remote Login" and enable it
