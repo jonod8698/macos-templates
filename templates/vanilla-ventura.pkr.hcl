@@ -99,6 +99,7 @@ build {
       // See https://github.com/xfreebird/kcpassword for details.
       "echo '00000000: 1ced 3f4a bcbc ba2c caca 4e82' | sudo xxd -r - /etc/kcpassword",
       "sudo defaults write /Library/Preferences/com.apple.loginwindow autoLoginUser admin",
+      "defaults write -g ApplePersistence -bool no",
       // Disable screensaver at login screen
       "sudo defaults write /Library/Preferences/com.apple.screensaver loginWindowIdleTime 0",
       // Disable screensaver for admin user
